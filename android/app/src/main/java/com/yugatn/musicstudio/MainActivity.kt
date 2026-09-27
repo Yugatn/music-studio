@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 
-data class Note(var pitch: Int, var beat: Float, var length: Float = .5f)
+data class Note(var pitch: Int, var beat: Float, var length: Float = .5f, var velocity: Int = 96)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
