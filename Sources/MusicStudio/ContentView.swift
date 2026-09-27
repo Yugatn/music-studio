@@ -7,10 +7,10 @@ struct ContentView: View {
     @State private var selectedPitch = 60
     @State private var selectedNoteID: UUID?
     @State private var isGenerating = false
-    private let composer = DemoAIComposer()
+    private let composer = DemoAIComposer()\n    @State private var history: ProjectHistory?
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 0) {\n            Color.clear.frame(height: 0).onReceive(NotificationCenter.default.publisher(for: .openMIDIFile)) { _ in openMIDI() }.onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }.onReceive(NotificationCenter.default.publisher(for: .saveProjectFile)) { _ in saveProject() }
             HStack(spacing: 12) {
                 Button { isPlaying.toggle() } label: {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
@@ -95,6 +95,36 @@ struct ContentView: View {
                     selectedNoteID: $selectedNoteID
                 )
             }
+        }
+    }
+
+    private func openMIDI() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.midi]
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url, let data = try? Data(contentsOf: url),
+           let imported = try? MIDIFileImporter.importProject(data: data, name: url.deletingPathExtension().lastPathComponent) {
+            project = imported
+            selectedNoteID = nil
+        }
+    }
+
+    private func openProject() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.musicStudioProject]
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url, let loaded = try? ProjectFile.load(from: url) {
+            project = loaded
+            selectedNoteID = nil
+        }
+    }
+
+    private func saveProject() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(project.name).yms"
+        panel.allowedContentTypes = [.musicStudioProject]
+        if panel.runModal() == .OK, let url = panel.url {
+            try? ProjectFile.save(project, to: url)
         }
     }
 
