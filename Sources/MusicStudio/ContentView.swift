@@ -72,9 +72,20 @@ struct ContentView: View {
                         updateSelectedPitch(newPitch)
                     }
 
+                    HStack {
+                        Button("Undo") { history?.undo() }.disabled(!(history?.canUndo ?? false))
+                        Button("Redo") { history?.redo() }.disabled(!(history?.canRedo ?? false))
+                    }
+
                     if selectedNoteID != nil {
                         Button("Delete note", role: .destructive) {
                             deleteSelectedNote()
+                        }
+                    }
+
+                    if selectedNoteID != nil {
+                        Button("Duplicate note") {
+                            duplicateSelectedNote()
                         }
                     }
 
@@ -168,6 +179,23 @@ struct ContentView: View {
 
         pattern.notes[index].pitch = pitch
         project.tracks[0].pattern = pattern
+    }
+
+    private func duplicateSelectedNote() {
+        guard let selectedNoteID,
+              var pattern = project.tracks.first?.pattern,
+              let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID }) else { return }
+        var copy = pattern.notes[index]
+        copy = NoteEvent(
+            pitch: copy.pitch,
+            startBeat: min(pattern.lengthBeats - copy.durationBeats, copy.startBeat + 0.5),
+            durationBeats: copy.durationBeats,
+            velocity: copy.velocity,
+            channel: copy.channel
+        )
+        pattern.notes.append(copy)
+        project.tracks[0].pattern = pattern
+        self.selectedNoteID = copy.id
     }
 
     private func deleteSelectedNote() {
