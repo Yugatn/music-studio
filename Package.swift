@@ -3,10 +3,28 @@ import PackageDescription
 
 let package = Package(
     name: "MusicStudio",
-    platforms: [.macOS(.v14)],
-    products: [.executable(name: "MusicStudio", targets: ["MusicStudio"])],
+    platforms: [
+        .macOS(.v14),
+        .iOS(.v17)
+    ],
+    products: [
+        .library(name: "MusicStudioCore", targets: ["MusicStudioCore"]),
+        .executable(name: "MusicStudio", targets: ["MusicStudio"])
+    ],
     targets: [
-        .executableTarget(name: "MusicStudio", path: "Sources/MusicStudio"),
-        .testTarget(name: "MusicStudioTests", dependencies: ["MusicStudio"], path: "Tests/MusicStudioTests")
+        .target(
+            name: "MusicStudioCore",
+            path: "Sources/MusicStudioCore"
+        ),
+        .executableTarget(
+            name: "MusicStudio",
+            dependencies: ["MusicStudioCore"],
+            path: "Sources/MusicStudio"
+        ),
+        .testTarget(
+            name: "MusicStudioTests",
+            dependencies: ["MusicStudioCore"],
+            path: "Tests/MusicStudioTests"
+        )
     ]
 )
