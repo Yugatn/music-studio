@@ -144,20 +144,22 @@ struct ContentView: View {
     }
 
     private func applyCurve() {
-        guard let existing = project.tracks.first?.pattern, !existing.notes.isEmpty else { return }
-        let points = currentCurve
         mutate { p in
-            guard var pattern = p.tracks[0].pattern else { return }
-            for i in pattern.notes.indices {
-                let x = pattern.notes[i].startBeat / max(0.001, pattern.lengthBeats)
-                let v = interpolate(points, x: x)
-                switch curveMode {
-                case .velocity: pattern.notes[i].velocity = max(1, min(127, Int((v * 126 + 1).rounded())))
-                case .pitch: pattern.notes[i].pitch = max(24, min(108, pattern.notes[i].pitch + Int(((v - 0.5) * 12).rounded())))
-                case .timing: pattern.notes[i].startBeat = max(0, min(pattern.lengthBeats - pattern.notes[i].durationBeats, pattern.notes[i].startBeat + (v - 0.5) * 0.5))
-                case .expression: break
-                }
+            guard p.tracks.indices.contains(0), var pattern = p.tracks[0].pattern else { return }
+            let target: AutomationTarget
+            switch curveMode {
+            case .velocity: target = .velocity
+            case .pitch: target = .pitch
+            case .timing: target = .timing
+            case .expression: return
             }
+            let lane = AutomationLane(name: curveMode.title, target: target, points: currentCurve.map { AutomationPoint(x: $0.x, y: $0.y) })
+            if let index = p.tracks[0].automation.firstIndex(where: { $0.target == target }) {
+                p.tracks[0].automation[index] = lane
+            } else {
+                p.tracks[0].automation.append(lane)
+            }
+            AutomationApplication.apply(lane, to: &pattern)
             p.tracks[0].pattern = pattern
         }
     }
