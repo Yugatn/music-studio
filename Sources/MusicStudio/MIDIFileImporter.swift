@@ -53,12 +53,16 @@ struct MIDIFileImporter {
 
         let format = try cursor.readUInt16()
         let trackCount = try cursor.readUInt16()
-        let ppq = try cursor.readUInt16()
+        let division = try cursor.readUInt16()
 
-        guard format <= 1, trackCount > 0, ppq > 0 else { throw MIDIImportError.unsupportedFormat }
+        guard format <= 1, trackCount > 0, division > 0, (division & 0x8000) == 0 else {
+            throw MIDIImportError.unsupportedFormat
+        }
 
+        let ppq = Int(division)
         var allNotes: [NoteEvent] = []
         var maxTick = 0
+        var tempoBPM = 120.0
 
         for _ in 0..<trackCount {
             guard try cursor.read(4) == Array("MTrk".utf8) else { throw MIDIImportError.invalidTrack }
@@ -78,14 +82,18 @@ struct MIDIFileImporter {
                     guard let runningStatus else { throw MIDIImportError.invalidTrack }
                     track.index -= 1
                     status = runningStatus
-                } else {
+                } else if status < 0xF0 {
                     runningStatus = status
                 }
 
                 if status == 0xFF {
-                    _ = try track.readByte()
+                    let metaType = try track.readByte()
                     let length = try track.variableLength()
-                    _ = try track.read(length)
+                    let payload = try track.read(length)
+                    if metaType == 0x51 && payload.count == 3 {
+                        let micros = (Int(payload[0]) << 16) | (Int(payload[1]) << 8) | Int(payload[2])
+                        if micros > 0 { tempoBPM = 60_000_000.0 / Double(micros) }
+                    }
                     continue
                 }
 
@@ -128,13 +136,17 @@ struct MIDIFileImporter {
         }
 
         let lengthBeats = max(4, ceil(Double(maxTick) / Double(ppq) / 4) * 4)
-        let pattern = Pattern(name: "Imported MIDI", lengthBeats: lengthBeats, notes: allNotes.sorted {
-            $0.startBeat == $1.startBeat ? $0.pitch < $1.pitch : $0.startBeat < $1.startBeat
-        })
+        let pattern = Pattern(
+            name: "Imported MIDI",
+            lengthBeats: lengthBeats,
+            notes: allNotes.sorted {
+                $0.startBeat == $1.startBeat ? $0.pitch < $1.pitch : $0.startBeat < $1.startBeat
+            }
+        )
 
         return MusicProject(
             name: name,
-            bpm: 120,
+            bpm: tempoBPM,
             key: "C",
             scale: "Major",
             tracks: [
