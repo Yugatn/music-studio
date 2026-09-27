@@ -45,6 +45,7 @@ public struct LocalCompositionAdvisor: CompositionAdvisor {
 
     public func analyze(project: MusicProject, intent: CompositionIntent) async throws -> [CompositionRecommendation] {
         let notes = project.tracks.compactMap { $0.pattern?.notes }.flatMap { $0 }
+        let metrics = MusicalAnalyzer.analyze(project)
         guard !notes.isEmpty else {
             return [CompositionRecommendation(title: "Добавить музыкальное ядро", reason: "В проекте пока нет нот для анализа.", changes: ["Создать мелодический или ритмический материал"], confidence: 1)]
         }
