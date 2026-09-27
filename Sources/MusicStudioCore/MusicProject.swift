@@ -31,9 +31,10 @@ public struct Track: Codable, Identifiable, Equatable, Sendable {
     public var name: String
     public var kind: TrackKind
     public var pattern: Pattern?
+    public var automation: [AutomationLane]
 
-    public init(id: UUID = UUID(), name: String, kind: TrackKind, pattern: Pattern? = nil) {
-        self.id=id; self.name=name; self.kind=kind; self.pattern=pattern
+    public init(id: UUID = UUID(), name: String, kind: TrackKind, pattern: Pattern? = nil, automation: [AutomationLane] = []) {
+        self.id=id; self.name=name; self.kind=kind; self.pattern=pattern; self.automation=automation
     }
 }
 
