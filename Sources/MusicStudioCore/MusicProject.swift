@@ -44,9 +44,10 @@ public struct MusicProject: Codable, Identifiable, Equatable, Sendable {
     public var key: String
     public var scale: String
     public var tracks: [Track]
+    public var metadata: ProjectMetadata
 
-    public init(id: UUID = UUID(), name: String, bpm: Double, key: String, scale: String, tracks: [Track]) {
-        self.id=id; self.name=name; self.bpm=bpm; self.key=key; self.scale=scale; self.tracks=tracks
+    public init(id: UUID = UUID(), name: String, bpm: Double, key: String, scale: String, tracks: [Track], metadata: ProjectMetadata = ProjectMetadata()) {
+        self.id=id; self.name=name; self.bpm=bpm; self.key=key; self.scale=scale; self.tracks=tracks; self.metadata=metadata
     }
 
     public static let demo = MusicProject(
