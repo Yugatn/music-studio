@@ -26,3 +26,10 @@ Emotion is treated as a target rather than a guaranteed psychological effect. Mu
 The current edited project is always the source context for analysis. The AI must not silently overwrite it. Recommendations and generated variations are separate results that the user can accept, reject, compare, or branch.
 
 `CompositionAdvisor` and `AICompositionEngine` are provider-neutral so local or remote models can be connected later without changing the editor or project format.
+
+
+## Change plans
+
+Recommendations can be represented as an explicit `AIChangePlan`. Each change declares a musical domain, intensity, description and scope. This makes AI suggestions reviewable before application and allows a provider to generate a variation from the same edited revision.
+
+The analysis layer uses reusable `MusicalMetrics` such as note count, average velocity, rhythmic density, register center and pitch range. These metrics are descriptive signals, not claims that a particular emotional response is guaranteed.
