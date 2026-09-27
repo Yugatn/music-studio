@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Binding var project: MusicProject
@@ -7,10 +9,16 @@ struct ContentView: View {
     @State private var selectedPitch = 60
     @State private var selectedNoteID: UUID?
     @State private var isGenerating = false
-    private let composer = DemoAIComposer()\n    @State private var history: ProjectHistory?
+    private let composer = DemoAIComposer()
+    @State private var history: ProjectHistory?
 
     var body: some View {
-        VStack(spacing: 0) {\n            Color.clear.frame(height: 0).onReceive(NotificationCenter.default.publisher(for: .openMIDIFile)) { _ in openMIDI() }.onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }.onReceive(NotificationCenter.default.publisher(for: .saveProjectFile)) { _ in saveProject() }
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: 0)
+                .onReceive(NotificationCenter.default.publisher(for: .openMIDIFile)) { _ in openMIDI() }
+                .onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }
+                .onReceive(NotificationCenter.default.publisher(for: .saveProjectFile)) { _ in saveProject() }
             HStack(spacing: 12) {
                 Button { isPlaying.toggle() } label: {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
@@ -107,6 +115,15 @@ struct ContentView: View {
                 )
             }
         }
+    }
+
+    private func exportMIDI() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(project.name).mid"
+        panel.allowedContentTypes = [.midi]
+        guard panel.runModal() == .OK, let url = panel.url,
+              let data = try? MIDIFile.export(project: project) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 
     private func openMIDI() {
