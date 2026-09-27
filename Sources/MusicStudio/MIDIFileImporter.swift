@@ -110,7 +110,7 @@ struct MIDIFileImporter {
                 case 0x80, 0x90:
                     let pitch = try track.readByte()
                     let velocity = try track.readByte()
-                    let key = "(channel):(pitch)"
+                    let key = "\(channel):\(pitch)"
 
                     if command == 0x90 && velocity > 0 {
                         active[key] = (tick, Int(velocity), channel)
@@ -146,7 +146,7 @@ struct MIDIFileImporter {
 
         return MusicProject(
             name: name,
-            bpm: tempoBPM,
+            bpm: min(240, max(40, tempoBPM)),
             key: "C",
             scale: "Major",
             tracks: [
