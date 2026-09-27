@@ -8,18 +8,25 @@
 - [x] Piano Roll prototype
 - [x] AI provider abstraction
 - [x] Test foundation
-- [ ] Automated CI
+- [x] Automated CI
+- [x] MIDI import/export foundation
+- [x] Project save/load foundation
 
 ## Milestone 1 — AI Melody Studio
 
-- [ ] Prompt composer
-- [ ] Melody generation
+- [x] Prompt composer
+- [x] Deterministic local demo melody generation
 - [ ] Candidate preview
 - [ ] Accept/reject variation
-- [ ] Editable note creation
-- [ ] MIDI import
-- [ ] MIDI export
-- [ ] Project save/load
+- [x] Editable note creation
+- [x] MIDI import
+- [x] MIDI export
+- [x] Project save/load
+- [x] Key/scale-aware demo generation
+- [ ] Undo/redo wired to every editor mutation
+- [ ] Velocity editing
+- [ ] Duration editing
+- [ ] Quantize
 
 ## Milestone 2 — Rhythm
 
