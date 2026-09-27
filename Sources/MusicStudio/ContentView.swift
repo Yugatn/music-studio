@@ -42,6 +42,11 @@ struct ContentView: View {
                 }
                 .frame(width: 100)
 
+                Picker("Scale", selection: $project.scale) {
+                    ForEach(["Major", "Minor", "Pentatonic", "Minor Pentatonic"], id: \.self) { Text($0).tag($0) }
+                }
+                .frame(width: 130)
+
                 TextField("Describe a melody or change…", text: $prompt)
                     .textFieldStyle(.roundedBorder)
 
@@ -84,6 +89,19 @@ struct ContentView: View {
                     }
                     .onChange(of: selectedPitch) { _, newPitch in
                         updateSelectedPitch(newPitch)
+                    }
+
+                    if selectedNoteID != nil {
+                        HStack {
+                            Text("Velocity")
+                            Slider(value: selectedVelocityBinding, in: 1...127, step: 1)
+                            Text("\(Int(selectedVelocityBinding.wrappedValue))").monospacedDigit()
+                        }
+                        HStack {
+                            Text("Duration")
+                            Slider(value: selectedDurationBinding, in: 0.25...4, step: 0.25)
+                            Text(String(format: "%.2f", selectedDurationBinding.wrappedValue))
+                        }
                     }
 
                     HStack {
@@ -312,6 +330,44 @@ struct ContentView: View {
             p.tracks[0].pattern = pattern
         }
         self.selectedNoteID = nil
+    }
+
+    private var selectedVelocityBinding: Binding<Double> {
+        Binding(
+            get: {
+                guard let id = selectedNoteID, let note = project.tracks.first?.pattern?.notes.first(where: { $0.id == id }) else { return 96 }
+                return Double(note.velocity)
+            },
+            set: { value in updateSelectedVelocity(Int(value.rounded())) }
+        )
+    }
+
+    private var selectedDurationBinding: Binding<Double> {
+        Binding(
+            get: {
+                guard let id = selectedNoteID, let note = project.tracks.first?.pattern?.notes.first(where: { $0.id == id }) else { return 0.5 }
+                return note.durationBeats
+            },
+            set: { value in updateSelectedDuration(value) }
+        )
+    }
+
+    private func updateSelectedVelocity(_ velocity: Int) {
+        mutate { p in
+            guard let id = selectedNoteID, p.tracks.indices.contains(0), var pattern = p.tracks[0].pattern,
+                  let index = pattern.notes.firstIndex(where: { $0.id == id }) else { return }
+            pattern.notes[index].velocity = max(1, min(127, velocity))
+            p.tracks[0].pattern = pattern
+        }
+    }
+
+    private func updateSelectedDuration(_ duration: Double) {
+        mutate { p in
+            guard let id = selectedNoteID, p.tracks.indices.contains(0), var pattern = p.tracks[0].pattern,
+                  let index = pattern.notes.firstIndex(where: { $0.id == id }) else { return }
+            pattern.notes[index].durationBeats = max(0.25, min(4, duration))
+            p.tracks[0].pattern = pattern
+        }
     }
 
     private func noteName(_ pitch: Int) -> String {
