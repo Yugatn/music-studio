@@ -38,6 +38,10 @@ struct ContentView: View {
                 }
                 .disabled(isGenerating)
 
+                Button("Export MIDI") {
+                    exportMIDI()
+                }
+
                 Spacer()
             }
             .padding(12)
