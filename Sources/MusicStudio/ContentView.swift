@@ -241,7 +241,10 @@ struct ContentView: View {
         Task {
             let candidate = try? await composer.generateMelody(request)
             if let candidate, !project.tracks.isEmpty {
-                project.tracks[0].pattern = candidate
+                mutate { p in
+                    guard !p.tracks.isEmpty else { return }
+                    p.tracks[0].pattern = candidate
+                }
                 selectedNoteID = nil
             }
             isGenerating = false
@@ -284,8 +287,10 @@ struct ContentView: View {
             velocity: copy.velocity,
             channel: copy.channel
         )
-        pattern.notes.append(copy)
-        project.tracks[0].pattern = pattern
+        mutate { p in
+            guard !p.tracks.isEmpty else { return }
+            p.tracks[0].pattern = pattern
+        }
         self.selectedNoteID = copy.id
     }
 
@@ -295,7 +300,10 @@ struct ContentView: View {
         else { return }
 
         pattern.notes.removeAll { $0.id == selectedNoteID }
-        project.tracks[0].pattern = pattern
+        mutate { p in
+            guard !p.tracks.isEmpty else { return }
+            p.tracks[0].pattern = pattern
+        }
         self.selectedNoteID = nil
     }
 
