@@ -10,7 +10,11 @@ struct ContentView: View {
     @State private var selectedNoteID: UUID?
     @State private var isGenerating = false
     private let composer = DemoAIComposer()
-    @State private var history: ProjectHistory?
+    @State private var history: [MusicProject] = []
+    @State private var future: [MusicProject] = []
+    @State private var showCurveEditor = false
+    @State private var curveMode: CurveMode = .velocity
+    @State private var curves = CurveSet.standard
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,6 +49,8 @@ struct ContentView: View {
                     generate()
                 }
                 .disabled(isGenerating)
+
+                Button(showCurveEditor ? "Hide Curves" : "Curves") { showCurveEditor.toggle() }
 
                 Button("Export MIDI") {
                     exportMIDI()
@@ -81,8 +87,18 @@ struct ContentView: View {
                     }
 
                     HStack {
-                        Button("Undo") { history?.undo() }.disabled(!(history?.canUndo ?? false))
-                        Button("Redo") { history?.redo() }.disabled(!(history?.canRedo ?? false))
+                        Button("Undo") { undo() }.disabled(history.isEmpty)
+                        Button("Redo") { redo() }.disabled(future.isEmpty)
+                    }
+
+                    if showCurveEditor {
+                        Divider()
+                        Text("CURVE").font(.caption).foregroundStyle(.secondary)
+                        Picker("Parameter", selection: $curveMode) {
+                            ForEach(CurveMode.allCases) { Text($0.title).tag($0) }
+                        }
+                        CurveEditorView(points: curveBinding).frame(height: 180)
+                        Button("Apply curve") { applyCurve() }
                     }
 
                     if selectedNoteID != nil {
@@ -115,6 +131,48 @@ struct ContentView: View {
                 )
             }
         }
+    }
+
+
+    private var curveBinding: Binding<[CurvePoint]> {
+        switch curveMode {
+        case .velocity: return $curves.velocity
+        case .expression: return $curves.expression
+        case .pitch: return $curves.pitch
+        case .timing: return $curves.timing
+        }
+    }
+
+    private func applyCurve() {
+        guard let existing = project.tracks.first?.pattern, !existing.notes.isEmpty else { return }
+        let points = currentCurve
+        mutate { p in
+            guard var pattern = p.tracks[0].pattern else { return }
+            for i in pattern.notes.indices {
+                let x = pattern.notes[i].startBeat / max(0.001, pattern.lengthBeats)
+                let v = interpolate(points, x: x)
+                switch curveMode {
+                case .velocity: pattern.notes[i].velocity = max(1, min(127, Int((v * 126 + 1).rounded())))
+                case .pitch: pattern.notes[i].pitch = max(24, min(108, pattern.notes[i].pitch + Int(((v - 0.5) * 12).rounded())))
+                case .timing: pattern.notes[i].startBeat = max(0, min(pattern.lengthBeats - pattern.notes[i].durationBeats, pattern.notes[i].startBeat + (v - 0.5) * 0.5))
+                case .expression: break
+                }
+            }
+            p.tracks[0].pattern = pattern
+        }
+    }
+
+    private var currentCurve: [CurvePoint] {
+        switch curveMode { case .velocity: return curves.velocity; case .expression: return curves.expression; case .pitch: return curves.pitch; case .timing: return curves.timing }
+    }
+
+    private func interpolate(_ points: [CurvePoint], x: Double) -> Double {
+        guard let first = points.first, let last = points.last else { return 0.5 }
+        if x <= first.x { return first.y }; if x >= last.x { return last.y }
+        for i in 1..<points.count where x <= points[i].x {
+            let a=points[i-1], b=points[i], t=(x-a.x)/max(0.0001,b.x-a.x); return a.y+(b.y-a.y)*t
+        }
+        return 0.5
     }
 
     private func exportMIDI() {
@@ -188,14 +246,28 @@ struct ContentView: View {
         }
     }
 
+    private func mutate(_ change: (inout MusicProject) -> Void) {
+        var next = project
+        change(&next)
+        guard next != project else { return }
+        history.append(project); future.removeAll(); project = next
+    }
+
+    private func undo() { guard let p = history.popLast() else { return }; future.append(project); project = p }
+    private func redo() { guard let p = future.popLast() else { return }; history.append(project); project = p }
+
     private func updateSelectedPitch(_ pitch: Int) {
         guard let selectedNoteID,
               var pattern = project.tracks.first?.pattern,
               let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID })
         else { return }
 
-        pattern.notes[index].pitch = pitch
-        project.tracks[0].pattern = pattern
+        mutate { p in
+            guard var pattern = p.tracks.first?.pattern,
+                  let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID }) else { return }
+            pattern.notes[index].pitch = pitch
+            p.tracks[0].pattern = pattern
+        }
     }
 
     private func duplicateSelectedNote() {
@@ -368,3 +440,8 @@ private struct NoteCell: View {
             )
     }
 }
+
+private enum CurveMode: String, CaseIterable, Identifiable { case velocity, expression, pitch, timing; var id: Self { self }; var title: String { rawValue.capitalized } }
+private struct CurvePoint: Identifiable { let id=UUID(); var x: Double; var y: Double }
+private struct CurveSet { var velocity:[CurvePoint]; var expression:[CurvePoint]; var pitch:[CurvePoint]; var timing:[CurvePoint]; static let standard=CurveSet(velocity:[CurvePoint(x:0,y:0.7),CurvePoint(x:0.5,y:0.45),CurvePoint(x:1,y:0.8)],expression:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)],pitch:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)],timing:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)]) }
+private struct CurveEditorView: View { @Binding var points:[CurvePoint]; var body: some View { GeometryReader { g in ZStack { RoundedRectangle(cornerRadius:8).fill(.quaternary.opacity(0.3)); Path { p in guard let f=points.first else{return}; p.move(to:CGPoint(x:f.x*g.size.width,y:(1-f.y)*g.size.height)); for q in points.dropFirst(){p.addLine(to:CGPoint(x:q.x*g.size.width,y:(1-q.y)*g.size.height))} }.stroke(.accent,lineWidth:2); ForEach(points){q in Circle().fill(.accent).frame(width:10,height:10).position(x:q.x*g.size.width,y:(1-q.y)*g.size.height).gesture(DragGesture().onChanged{v in if let i=points.firstIndex(where:{$0.id==q.id}){points[i].x=max(0,min(1,v.location.x/g.size.width));points[i].y=max(0,min(1,1-v.location.y/g.size.height));points.sort{$0.x<$1.x}}}) } } } } }
