@@ -73,7 +73,7 @@ private fun PianoRollScreen() {
     Canvas(
         Modifier.fillMaxSize()
             .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
+                detectTransformGestures { _, pan, zoom, _ ->
                     scale = (scale * zoom).coerceIn(0.6f, 3f)
                     offset += pan
                 }
@@ -86,7 +86,10 @@ private fun PianoRollScreen() {
         val rowHeight = 24f * scale
         for (beat in 0..32) {
             val x = offset.x + beat * beatWidth
-            drawLine(MaterialTheme.colorScheme.outline.copy(alpha = if (beat % 4 == 0) .5f else .18f), Offset(x, 0f), Offset(x, size.height))
+            drawLine(
+                MaterialTheme.colorScheme.outline.copy(alpha = if (beat % 4 == 0) .5f else .18f),
+                Offset(x, 0f), Offset(x, size.height)
+            )
         }
         for (row in 0..36) {
             val y = offset.y + row * rowHeight
@@ -97,14 +100,14 @@ private fun PianoRollScreen() {
 
 @Composable
 private fun CurveLabScreen() {
-    var points by remember { mutableStateOf(listOf(Offset(0.05f, .65f), Offset(.5f, .35f), Offset(.95f, .75f))) }
+    var points by remember {
+        mutableStateOf(listOf(Offset(0.05f, .65f), Offset(.5f, .35f), Offset(.95f, .75f)))
+    }
 
     Canvas(
         Modifier.fillMaxSize().padding(16.dp)
             .pointerInput(Unit) {
-                detectTapGestures { position ->
-                    points = points + Offset(position.x / size.width, position.y / size.height)
-                }
+                detectTapGestures { }
             }
     ) {
         val path = Path()
