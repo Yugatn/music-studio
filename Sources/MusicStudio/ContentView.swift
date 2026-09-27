@@ -293,6 +293,11 @@ struct ContentView: View {
             guard !p.tracks.isEmpty else { return }
             p.tracks[0].pattern = pattern
         }
+        pattern.notes.append(copy)
+        mutate { p in
+            guard !p.tracks.isEmpty else { return }
+            p.tracks[0].pattern = pattern
+        }
         self.selectedNoteID = copy.id
     }
 
