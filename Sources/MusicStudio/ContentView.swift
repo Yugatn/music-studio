@@ -169,9 +169,10 @@ private struct PianoRollView: View {
                 ZStack(alignment: .topLeading) {
                     grid
                         .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { location in
-                            addNote(at: location)
-                        }
+                        .gesture(
+                            SpatialTapGesture(count: 2)
+                                .onEnded { value in addNote(at: value.location) }
+                        )
 
                     ForEach(pattern.notes) { note in
                         NoteCell(
