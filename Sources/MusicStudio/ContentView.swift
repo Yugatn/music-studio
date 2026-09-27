@@ -222,8 +222,10 @@ struct ContentView: View {
                 project.tracks.first?.pattern ?? Pattern(name: "Empty", lengthBeats: 8)
             },
             set: { newPattern in
-                guard !project.tracks.isEmpty else { return }
-                project.tracks[0].pattern = newPattern
+                mutate { p in
+                    guard !p.tracks.isEmpty else { return }
+                    p.tracks[0].pattern = newPattern
+                }
             }
         )
     }
