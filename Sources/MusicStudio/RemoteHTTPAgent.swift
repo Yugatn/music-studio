@@ -68,8 +68,9 @@ struct RemoteHTTPAgent: AIMusicAgent {
     }
 
     private func callRemote(context: AICompositionContext) async throws -> AICompositionResult? {
-        guard let url = URL(string: config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            + config.composePath) else { return nil }
+        let base = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let path = config.composePath.hasPrefix("/") ? config.composePath : "/" + config.composePath
+        guard let url = URL(string: base + path) else { return nil }
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -116,7 +117,9 @@ struct RemoteHTTPAgent: AIMusicAgent {
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard data.count <= 2_000_000,
+              let http = response as? HTTPURLResponse,
+              (200..<300).contains(http.statusCode) else {
             return nil
         }
 
@@ -160,17 +163,24 @@ struct RemoteHTTPAgent: AIMusicAgent {
             let lengthBeats: Double?
             let explanation: String?
         }
-        guard let dto = try? JSONDecoder().decode(PatternDTO.self, from: data), !dto.notes.isEmpty else {
+        guard let dto = try? JSONDecoder().decode(PatternDTO.self, from: data),
+              !dto.notes.isEmpty,
+              dto.notes.count <= 512 else {
             return nil
         }
-        let notes = dto.notes.map {
-            NoteEvent(
-                pitch: max(24, min(108, $0.pitch)),
-                startBeat: max(0, $0.startBeat),
-                durationBeats: max(0.25, $0.durationBeats),
-                velocity: max(1, min(127, $0.velocity ?? 96))
+        let notes = dto.notes.compactMap { raw -> NoteEvent? in
+            guard raw.startBeat.isFinite,
+                  raw.durationBeats.isFinite,
+                  raw.startBeat >= 0,
+                  raw.durationBeats > 0 else { return nil }
+            return NoteEvent(
+                pitch: max(24, min(108, raw.pitch)),
+                startBeat: raw.startBeat,
+                durationBeats: min(32, max(0.25, raw.durationBeats)),
+                velocity: max(1, min(127, raw.velocity ?? 96))
             )
         }
+        guard !notes.isEmpty else { return nil }
         let length = dto.lengthBeats ?? max(8, notes.map { $0.startBeat + $0.durationBeats }.max() ?? 8)
         return Pattern(name: dto.explanation ?? "Remote AI", lengthBeats: length, notes: notes)
     }
