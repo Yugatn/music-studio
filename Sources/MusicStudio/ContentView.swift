@@ -34,6 +34,8 @@ struct ContentView: View {
     @State private var aiCandidate: Pattern?
     @State private var projectNoteDraft = ""
     @State private var tagDraft = ""
+    @State private var showBrowser = false
+    @State private var showInspector = true
 
     private var noteCount: Int { project.tracks.first?.pattern?.notes.count ?? 0 }
 
@@ -45,69 +47,73 @@ struct ContentView: View {
                     .onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }
                     .onReceive(NotificationCenter.default.publisher(for: .saveProjectFile)) { _ in saveProject() }
 
-                HStack(spacing: 12) {
-                    Button { isPlaying.toggle() } label: {
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    }
-                    .keyboardShortcut(.space, modifiers: [])
-                    .help("Transport flag only — audio engine not yet wired")
-
-                    Picker("Mode", selection: $workspaceMode) {
-                        ForEach(WorkspaceMode.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-
-                    TextField("Project", text: $project.name).frame(width: 140)
-                    Stepper("BPM \(Int(project.bpm))", value: $project.bpm, in: 40...240).frame(width: 125)
-
-                    Picker("Key", selection: $project.key) {
-                        ForEach(["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"], id: \.self) {
-                            Text($0).tag($0)
-                        }
-                    }.frame(width: 100)
-
-                    Picker("Scale", selection: $project.scale) {
-                        ForEach(["Major", "Minor", "Pentatonic", "Minor Pentatonic"], id: \.self) {
-                            Text($0).tag($0)
-                        }
-                    }.frame(width: 130)
-
-                    if workspaceMode != .edit {
-                        TextField("Describe a melody or change…", text: $prompt)
-                            .textFieldStyle(.roundedBorder)
-                        Button(isGenerating ? "Working…" : "Generate") { generate() }
-                            .disabled(isGenerating)
-                        Button("Transform") { transformPattern() }
-                            .disabled(isGenerating || noteCount == 0)
-                    }
-
-                    Button(showCurveEditor ? "Hide Curves" : "Curves") { showCurveEditor.toggle() }
-                    Button("Export MIDI") { exportMIDI() }
-                    Button { showCommandPalette = true } label: { Image(systemName: "command") }
-                        .keyboardShortcut("k", modifiers: [.command])
-                    Spacer()
-                    Text("\(noteCount) notes")
-                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                }
-                .padding(12)
-
-                Divider()
+                StudioChrome(
+                    projectName: $project.name,
+                    bpm: $project.bpm,
+                    isPlaying: $isPlaying,
+                    workspaceMode: $workspaceMode,
+                    key: project.key,
+                    scale: project.scale,
+                    noteCount: noteCount,
+                    selectionCount: selectedNoteIDs.count,
+                    hasCandidate: aiCandidate != nil,
+                    isGenerating: isGenerating,
+                    canUndo: !history.isEmpty,
+                    canRedo: !future.isEmpty,
+                    onUndo: undo,
+                    onRedo: redo,
+                    onCommandPalette: { showCommandPalette = true },
+                    onToggleBrowser: { showBrowser.toggle() },
+                    onToggleInspector: { showInspector.toggle() }
+                )
 
                 HStack(spacing: 0) {
-                    inspector
-                        .padding(16)
-                        .frame(width: workspaceMode == .edit ? 260 : 240)
+                    if showBrowser {
+                        StudioBrowserPanel()
+                            .frame(width: 180)
+                        Divider()
+                    }
 
-                    Divider()
+                    VStack(spacing: 0) {
+                        ArrangementStrip(
+                            pattern: project.tracks.first?.pattern ?? Pattern(name: "Empty", lengthBeats: 8),
+                            candidate: showCandidateOverlay ? aiCandidate : nil,
+                            bpm: project.bpm
+                        )
+                        Divider()
 
-                    PianoRollCanvas(
-                        pattern: patternBinding,
-                        selectedPitch: $selectedPitch,
-                        selectedNoteID: $selectedNoteID,
-                        selectedNoteIDs: $selectedNoteIDs,
-                        candidate: showCandidateOverlay ? aiCandidate : nil
-                    )
+                        if workspaceMode != .edit {
+                            HStack(spacing: 8) {
+                                TextField("Describe a melody or change…", text: $prompt)
+                                    .textFieldStyle(.roundedBorder)
+                                Button(isGenerating ? "Working…" : "Generate") { generate() }
+                                    .disabled(isGenerating)
+                                Button("Transform") { transformPattern() }
+                                    .disabled(isGenerating || noteCount == 0)
+                                Button(showCurveEditor ? "Hide Curves" : "Curves") { showCurveEditor.toggle() }
+                                Button("Export MIDI") { exportMIDI() }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            Divider()
+                        }
+
+                        PianoRollCanvas(
+                            pattern: patternBinding,
+                            selectedPitch: $selectedPitch,
+                            selectedNoteID: $selectedNoteID,
+                            selectedNoteIDs: $selectedNoteIDs,
+                            candidate: showCandidateOverlay ? aiCandidate : nil
+                        )
+                    }
+
+                    if showInspector {
+                        Divider()
+                        inspector
+                            .padding(16)
+                            .frame(width: workspaceMode == .edit ? 280 : 250)
+                    }
                 }
             }
 
@@ -115,6 +121,18 @@ struct ContentView: View {
                 Color.black.opacity(0.25).ignoresSafeArea()
                     .onTapGesture { showCommandPalette = false }
                 CommandPaletteView(isPresented: $showCommandPalette, commands: studioCommands)
+            }
+        }
+        .onChange(of: workspaceMode) { _, mode in
+            // Comfortable defaults: Edit focuses the roll; AI keeps inspector; Compose is balanced
+            switch mode {
+            case .edit:
+                showInspector = true
+                showBrowser = false
+            case .ai:
+                showInspector = true
+            case .compose:
+                break
             }
         }
     }
@@ -168,10 +186,7 @@ struct ContentView: View {
                     .keyboardShortcut("d", modifiers: [.command])
                 Button("Transpose +1") { transposeSelected(semitones: 1) }
                 Button("Transpose −1") { transposeSelected(semitones: -1) }
-                Button("Deselect") {
-                    selectedNoteID = nil
-                    selectedNoteIDs.removeAll()
-                }
+                Button("Deselect") { clearSelection() }
             }
 
             Button("Quantize 1/16") { quantizeSelectedOrAll(grid: 0.25) }
@@ -205,7 +220,7 @@ struct ContentView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
 
-            Text("Cmd+click multi-select. Cmd+K palette. Transport is flag-only.")
+            Text("Panels toggle in chrome. Complexity on demand — see UX_PRINCIPLES.md.")
                 .font(.caption).foregroundStyle(.secondary)
             Spacer()
         }
@@ -222,10 +237,9 @@ struct ContentView: View {
             StudioCommand(id: "accept", title: "Accept AI Candidate", action: acceptCandidate),
             StudioCommand(id: "reject", title: "Reject AI Candidate", action: { aiCandidate = nil }),
             StudioCommand(id: "select-all", title: "Select All Notes", action: selectAllNotes),
-            StudioCommand(id: "deselect", title: "Deselect", action: {
-                selectedNoteID = nil
-                selectedNoteIDs.removeAll()
-            }),
+            StudioCommand(id: "deselect", title: "Deselect", action: clearSelection),
+            StudioCommand(id: "toggle-browser", title: "Toggle Browser", action: { showBrowser.toggle() }),
+            StudioCommand(id: "toggle-inspector", title: "Toggle Inspector", action: { showInspector.toggle() }),
             StudioCommand(id: "export", title: "Export MIDI…", action: exportMIDI),
             StudioCommand(id: "save", title: "Save Project…", action: saveProject),
         ]
