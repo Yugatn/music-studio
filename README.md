@@ -49,7 +49,7 @@ swift run MusicStudio
 
 Keys are stored only under Application Support (`~/Library/Application Support/MusicStudio/ai-connection.json`), not in project files.
 
-Compatible with **OpenAI Chat Completions** and similar APIs that return JSON notes.
+Compatible with **OpenAI Chat Completions** and similar APIs that return JSON notes. Remote responses are validated and normalized before they become candidates; malformed or oversized responses are rejected and the local composer is used as a fallback.
 
 ## Collaborative loop
 
@@ -61,10 +61,11 @@ See `docs/AI_AGENT_LOOP.md`.
 
 ## Features (current)
 
-- Local + remote AI agents, Accept/Reject candidates  
+- Local + remote AI agents, candidate overlay, explicit Accept/Reject  
 - Piano Roll, multi-select, quantize, humanize  
 - MIDI import/export, `.yms` projects  
-- Workspace modes, Cmd+K, keyboard shortcuts  
+- Workspace modes, Cmd+K, keyboard shortcuts
+- Rework from the current human-edited pattern without silent overwrite  
 
 ## Docs
 
