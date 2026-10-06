@@ -110,8 +110,9 @@ final class AIAgentOrchestrator: ObservableObject {
         let melody = LocalMelodyAgent()
         registry.register(melody)
         registry.register(LocalVariationAgent())
-        refreshRemoteAgent()
+        // All stored properties must be initialized before any instance method uses `self`.
         session = AIAgentSession(activeAgentID: melody.descriptor.id)
+        refreshRemoteAgent()
         availableAgents = registry.allDescriptors
     }
 
