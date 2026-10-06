@@ -9,7 +9,11 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Select Swift
+      - name: Select Swift 6
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+      - name: Verify Swift toolchain
         run: swift --version
       - name: Build
         run: swift build
