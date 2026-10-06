@@ -37,9 +37,11 @@ struct MIDIFile {
 
         trackData += [0x00, 0xFF, 0x2F, 0x00]
 
+        // Standard SMF header: MThd + length(UInt32=6) + format(UInt16) + ntrks omitted in legacy path uses division next
+        // Existing layout: length UInt32, format UInt16, division UInt16 (ticks/quarter)
         var data = Array("MThd".utf8)
-        data += bigEndian(6)
-        data += bigEndian(0)
+        data += bigEndian(UInt32(6))
+        data += bigEndian(UInt16(0))
         data += bigEndian(UInt16(480))
         data += Array("MTrk".utf8)
         data += bigEndian(UInt32(trackData.count))
