@@ -1,43 +1,73 @@
 # Yugatn Music Studio
 
-AI-first music workstation with a native macOS editor and a cross-platform musical core.
+AI-first music workstation (native macOS). Generate melodies with local or **connected remote AI agents**, edit in Piano Roll, then ask the agent to **rework after your edits** without silent overwrite.
 
-## Current capabilities
+## Download / run on Mac
 
-- AI-assisted melody generation and iterative transformation.
-- Editable Piano Roll.
-- MIDI import and export.
-- Key/scale-aware demo composition.
-- Curve Lab with persistent Velocity, Pitch and Timing automation lanes.
-- Versioned `.yms` project format.
-- Persistent project notes and tags.
-- Undo/Redo for project mutations.
-- Composition revision graph for iterative AI work.
-- Musical metrics and AI composition recommendations.
-- Explicit AI change plans.
-- Structured composition intent and reusable sound palettes for cinematic, shamanic and dark ambient directions.
-- Android Compose prototype.
-- Cross-platform project storage and sync model.
+### Option A — Build the `.app` (recommended)
 
-## Development model
+On a Mac with **macOS 14+** and **Xcode / Swift 6**:
 
-AI generation does not have to overwrite the musician's work. The intended workflow is:
+```bash
+git clone https://github.com/Yugatn/music-studio.git
+cd music-studio
+chmod +x scripts/build-macos-app.sh
+./scripts/build-macos-app.sh
+open dist/MusicStudio.app
+```
 
-**Generate → Edit → Analyze → Recommend → Apply/Reject → Revise → Compare → Save**
+Artifacts:
 
-The project model is designed so the current edited composition remains the source context for subsequent AI work.
+- `dist/MusicStudio.app` — double-click to run  
+- `dist/MusicStudio-macOS.zip` — share / archive  
 
-## Build
+### Option B — Run from source
 
-    swift build
-    swift test
-    swift run MusicStudio
+```bash
+git clone https://github.com/Yugatn/music-studio.git
+cd music-studio
+swift run MusicStudio
+```
 
-## Repository map
+> Pre-built binaries are not published from this environment. Build on your Mac with the script above.
 
-- `Sources/MusicStudioCore` — platform-independent musical model and AI/composition services, including `CompositionPresets`.
-- `Sources/MusicStudio` — current macOS SwiftUI application.
-- `android` — Android client prototype.
-- `docs` — architecture, AI workflow, sound palette library, roadmap and development status.
+## Connect an AI (remote)
 
-See `docs/ARCHITECTURE.md`, `docs/AI_COMPOSITION_WORKFLOW.md`, `docs/SOUND_PALETTE_LIBRARY.md`, `docs/DEVELOPMENT_STATUS.md` and `docs/ROADMAP.md`.
+1. Open the app → mode **AI** or **Compose**.  
+2. Inspector → **Connect AI…**  
+3. Enable remote AI and set:
+
+| Field | Example |
+|-------|---------|
+| Base URL | `https://api.openai.com/v1` |
+| API key | your key |
+| Model | `gpt-4o-mini` |
+| Compose path | `/chat/completions` |
+
+4. **Save & connect** — agent **Remote AI** appears in the picker.  
+5. **Generate** / **Rework after edits** use the remote model when possible; on failure the local engine is used.
+
+Keys are stored only under Application Support (`~/Library/Application Support/MusicStudio/ai-connection.json`), not in project files.
+
+Compatible with **OpenAI Chat Completions** and similar APIs that return JSON notes.
+
+## Collaborative loop
+
+```
+Generate → Accept → you edit notes → Rework after edits → Accept / Reject
+```
+
+See `docs/AI_AGENT_LOOP.md`.
+
+## Features (current)
+
+- Local + remote AI agents, Accept/Reject candidates  
+- Piano Roll, multi-select, quantize, humanize  
+- MIDI import/export, `.yms` projects  
+- Workspace modes, Cmd+K, keyboard shortcuts  
+
+## Docs
+
+- `docs/AI_AGENT_LOOP.md` — agent protocol  
+- `docs/UX_PRINCIPLES.md` — shortcuts and panels  
+- `docs/ROADMAP.md` — longer-term plan  
