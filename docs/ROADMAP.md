@@ -16,27 +16,32 @@
 
 - [x] Prompt composer
 - [x] Deterministic local demo melody generation
-- [ ] Candidate preview
-- [ ] Accept/reject variation
+- [x] Candidate preview / overlay
+- [x] Accept/reject candidate
 - [x] Editable note creation
 - [x] MIDI import
 - [x] MIDI export
 - [x] Project save/load
 - [x] Key/scale-aware demo generation
-- [ ] Undo/redo wired to every editor mutation
-- [ ] Velocity editing
-- [ ] Duration editing
-- [ ] Quantize
+- [x] Undo/redo foundation
+- [x] Velocity editing
+- [x] Duration editing
+- [x] Quantize
+- [x] Humanize
+- [x] Rework after human edits
+- [x] External AI connection settings
+- [x] Remote HTTP AI provider
+- [x] Local fallback when remote AI is unavailable
+- [x] Remote response validation and note normalization
 - [x] Reusable structured composition intent and sound palette presets
 - [ ] Connect sound palette selection to the macOS composition UI
-- [ ] Pass selected palette intent and prompt to AI providers
+- [ ] Pass selected palette intent and prompt to all AI providers
 
 ## Milestone 2 — Rhythm
 
 - [ ] Drum Grid
 - [ ] Step sequencing
 - [ ] Velocity editing
-- [ ] Humanize
 - [ ] Groove templates
 
 ## Milestone 3 — Arrangement
@@ -53,9 +58,9 @@
 
 - [ ] Audio engine
 - [ ] Mixer
-- [ ] buses and sends
-- [ ] metering
-- [ ] offline render
+- [ ] Buses and sends
+- [ ] Metering
+- [ ] Offline render
 - [ ] WAV/AIFF/FLAC export
 
 ## Milestone 5 — AI workstation
@@ -66,7 +71,7 @@
 - [ ] Arrangement suggestions
 - [ ] Audio analysis
 - [ ] Local AI provider
-- [ ] Remote AI provider
+- [x] Remote AI provider
 
 ## Milestone 6 — Interoperability
 
@@ -75,3 +80,11 @@
 - [ ] CLAP evaluation
 - [ ] MusicXML
 - [ ] MIDI controller mapping
+
+## Next implementation priority
+
+1. Wire sound palette and composition intent into the visible Compose UI.
+2. Add real audio transport with AVAudioEngine instead of the current transport flag.
+3. Build the Drum Grid and shared rhythm editing primitives.
+4. Add project-level candidate history so rejected and accepted AI variations remain inspectable.
+5. Add automated macOS build verification and focused AI protocol tests.
