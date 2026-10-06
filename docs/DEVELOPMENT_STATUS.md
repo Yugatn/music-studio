@@ -1,45 +1,33 @@
 # Development status
 
-Updated: 2026-10-06
+Updated: 2026-10-06 (evening)
 
 ## Implemented
 
-- Cross-platform MusicProject core.
-- Versioned .yms codec and portable project storage.
-- Project notes and tags (core).
-- Shared note editing and undo/redo.
-- Composition revision graph (core).
-- AI composition context for iterative work after manual edits.
-- Musical metrics and AI recommendations (core).
-- Explicit AI change plans (core).
-- Persistent automation lanes for velocity, pitch and timing.
-- Android Compose prototype with Piano Roll and Curve Lab.
-- Platform-neutral sync revision model.
+- Cross-platform MusicProject core, .yms, notes/tags model.
+- Undo/redo, revision graph (core), automation lanes.
+- Demo AI generate + transform.
+- Android prototype.
 
-### macOS UI (2026-10-06)
+### macOS UI
 
-- Duplicate note: single history mutation.
-- Quantize 1/16 (selected or all).
-- Transpose ±1, Humanize (timing/velocity jitter).
-- Keyboard: Space, Cmd+Z / Cmd+Shift+Z, Delete, Cmd+D.
-- Workspace modes: Compose / Edit / AI (segmented).
-- **Transform** — non-destructive AI transform of current pattern via prompt.
-- Curve lab types restored (`CurveMode`, `CurveSet`, `CurveEditorView`).
-- Note count in toolbar; clear history on open project/MIDI.
+- Piano Roll: create/drag, quantize, humanize, transpose, duplicate.
+- Workspace modes Compose / Edit / AI.
+- **Cmd+K command palette** (`CommandPalette.swift`).
+- **AI candidate stage**: Generate/Transform → Accept/Reject (does not overwrite until Accept).
+- **Project notes & tags** UI in inspector (uses `ProjectMetadataEditing`).
+- Curve lab restored.
 
-## Explicitly not done yet
+## Not done
 
-- Audio playback / render engine (transport is UI flag only).
-- Command palette (Cmd+K).
-- Multi-select / box selection on Piano Roll.
-- Browser / arrangement timeline panel.
-- Independent candidate compare UI.
+- Audio engine / real transport.
+- Multi-select box on Piano Roll.
+- Arrangement timeline / browser panel.
+- Full candidate A/B visual compare on roll.
 
-## Next implementation priorities
+## Next
 
-1. Command palette + centralized shortcuts.
-2. Multi-note selection on Piano Roll.
-3. Project notes/tags UI in macOS inspector.
-4. Candidate A/B compare before Accept AI result.
-5. Audio engine foundation (playhead + MIDI preview).
-6. Connect Android Piano Roll to MusicProject.
+1. Multi-note selection.
+2. Playhead + MIDI preview path.
+3. Arrangement strip.
+4. Candidate overlay on Piano Roll.
