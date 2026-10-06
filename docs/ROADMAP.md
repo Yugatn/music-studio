@@ -27,6 +27,9 @@
 - [ ] Velocity editing
 - [ ] Duration editing
 - [ ] Quantize
+- [x] Reusable structured composition intent and sound palette presets
+- [ ] Connect sound palette selection to the macOS composition UI
+- [ ] Pass selected palette intent and prompt to AI providers
 
 ## Milestone 2 — Rhythm
 
