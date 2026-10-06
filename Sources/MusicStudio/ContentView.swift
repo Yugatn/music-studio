@@ -42,10 +42,25 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
+                StudioShortcutBridge()
                 Color.clear.frame(height: 0)
                     .onReceive(NotificationCenter.default.publisher(for: .openMIDIFile)) { _ in openMIDI() }
                     .onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }
                     .onReceive(NotificationCenter.default.publisher(for: .saveProjectFile)) { _ in saveProject() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.setModeCompose)) { _ in workspaceMode = .compose }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.setModeEdit)) { _ in workspaceMode = .edit }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.setModeAI)) { _ in workspaceMode = .ai }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.toggleBrowser)) { _ in showBrowser.toggle() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.toggleInspector)) { _ in showInspector.toggle() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.toggleCurves)) { _ in showCurveEditor.toggle() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.commandPalette)) { _ in showCommandPalette = true }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.quantize)) { _ in quantizeSelectedOrAll(grid: 0.25) }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.humanize)) { _ in humanizeNotes() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.selectAllNotes)) { _ in selectAllNotes() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.acceptCandidate)) { _ in acceptCandidate() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.rejectCandidate)) { _ in aiCandidate = nil }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.generate)) { _ in generate() }
+                    .onReceive(NotificationCenter.default.publisher(for: StudioShortcut.transform)) { _ in transformPattern() }
 
                 StudioChrome(
                     projectName: $project.name,
@@ -124,7 +139,6 @@ struct ContentView: View {
             }
         }
         .onChange(of: workspaceMode) { _, mode in
-            // Comfortable defaults: Edit focuses the roll; AI keeps inspector; Compose is balanced
             switch mode {
             case .edit:
                 showInspector = true
@@ -220,7 +234,7 @@ struct ContentView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
 
-            Text("Panels toggle in chrome. Complexity on demand — see UX_PRINCIPLES.md.")
+            Text("Cmd+1/2/3 modes · Cmd+B/I panels · see UX_PRINCIPLES.md")
                 .font(.caption).foregroundStyle(.secondary)
             Spacer()
         }
@@ -238,8 +252,12 @@ struct ContentView: View {
             StudioCommand(id: "reject", title: "Reject AI Candidate", action: { aiCandidate = nil }),
             StudioCommand(id: "select-all", title: "Select All Notes", action: selectAllNotes),
             StudioCommand(id: "deselect", title: "Deselect", action: clearSelection),
+            StudioCommand(id: "mode-compose", title: "Mode: Compose", keywords: ["workspace"], action: { workspaceMode = .compose }),
+            StudioCommand(id: "mode-edit", title: "Mode: Edit", keywords: ["workspace"], action: { workspaceMode = .edit }),
+            StudioCommand(id: "mode-ai", title: "Mode: AI", keywords: ["workspace"], action: { workspaceMode = .ai }),
             StudioCommand(id: "toggle-browser", title: "Toggle Browser", action: { showBrowser.toggle() }),
             StudioCommand(id: "toggle-inspector", title: "Toggle Inspector", action: { showInspector.toggle() }),
+            StudioCommand(id: "toggle-curves", title: "Toggle Curve Lab", action: { showCurveEditor.toggle() }),
             StudioCommand(id: "export", title: "Export MIDI…", action: exportMIDI),
             StudioCommand(id: "save", title: "Save Project…", action: saveProject),
         ]
