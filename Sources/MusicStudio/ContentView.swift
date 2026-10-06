@@ -28,6 +28,7 @@ struct ContentView: View {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                 }
                 .keyboardShortcut(.space, modifiers: [])
+                .help("Transport flag only — audio engine not yet wired")
 
                 TextField("Project", text: $project.name)
                     .frame(width: 150)
@@ -50,17 +51,11 @@ struct ContentView: View {
                 TextField("Describe a melody or change…", text: $prompt)
                     .textFieldStyle(.roundedBorder)
 
-                Button(isGenerating ? "Generating…" : "Generate") {
-                    generate()
-                }
-                .disabled(isGenerating)
+                Button(isGenerating ? "Generating…" : "Generate") { generate() }
+                    .disabled(isGenerating)
 
                 Button(showCurveEditor ? "Hide Curves" : "Curves") { showCurveEditor.toggle() }
-
-                Button("Export MIDI") {
-                    exportMIDI()
-                }
-
+                Button("Export MIDI") { exportMIDI() }
                 Spacer()
             }
             .padding(12)
@@ -69,27 +64,14 @@ struct ContentView: View {
 
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("TRACK")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Text(project.tracks.first?.name ?? "No track")
-                        .font(.headline)
-
+                    Text("TRACK").font(.caption).foregroundStyle(.secondary)
+                    Text(project.tracks.first?.name ?? "No track").font(.headline)
                     Divider()
-
-                    Text("SELECTED NOTE")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
+                    Text("SELECTED NOTE").font(.caption).foregroundStyle(.secondary)
                     Picker("Pitch", selection: $selectedPitch) {
-                        ForEach(36...84, id: \.self) { pitch in
-                            Text(noteName(pitch)).tag(pitch)
-                        }
+                        ForEach(36...84, id: \.self) { pitch in Text(noteName(pitch)).tag(pitch) }
                     }
-                    .onChange(of: selectedPitch) { _, newPitch in
-                        updateSelectedPitch(newPitch)
-                    }
+                    .onChange(of: selectedPitch) { _, newPitch in updateSelectedPitch(newPitch) }
 
                     if selectedNoteID != nil {
                         HStack {
@@ -105,8 +87,8 @@ struct ContentView: View {
                     }
 
                     HStack {
-                        Button("Undo") { undo() }.disabled(history.isEmpty)
-                        Button("Redo") { redo() }.disabled(future.isEmpty)
+                        Button("Undo") { undo() }.keyboardShortcut("z", modifiers: [.command]).disabled(history.isEmpty)
+                        Button("Redo") { redo() }.keyboardShortcut("z", modifiers: [.command, .shift]).disabled(future.isEmpty)
                     }
 
                     if showCurveEditor {
@@ -120,37 +102,27 @@ struct ContentView: View {
                     }
 
                     if selectedNoteID != nil {
-                        Button("Delete note", role: .destructive) {
-                            deleteSelectedNote()
-                        }
+                        Button("Delete note", role: .destructive) { deleteSelectedNote() }
+                            .keyboardShortcut(.delete, modifiers: [])
+                        Button("Duplicate note") { duplicateSelectedNote() }
+                            .keyboardShortcut("d", modifiers: [.command])
+                        Button("Transpose +1") { transposeSelected(semitones: 1) }
+                        Button("Transpose −1") { transposeSelected(semitones: -1) }
                     }
-
-                    if selectedNoteID != nil {
-                        Button("Duplicate note") {
-                            duplicateSelectedNote()
-                        }
-                    }
+                    Button("Quantize 1/16") { quantizeSelectedOrAll(grid: 0.25) }
 
                     Text("Drag a note to change pitch and timing. Double-click an empty grid cell to create a note.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
+                        .font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 }
-                .padding(16)
-                .frame(width: 220)
+                .padding(16).frame(width: 220)
 
                 Divider()
 
-                PianoRollView(
-                    pattern: patternBinding,
-                    selectedPitch: $selectedPitch,
-                    selectedNoteID: $selectedNoteID
-                )
+                PianoRollView(pattern: patternBinding, selectedPitch: $selectedPitch, selectedNoteID: $selectedNoteID)
             }
         }
     }
-
 
     private var curveBinding: Binding<[CurvePoint]> {
         switch curveMode {
@@ -183,16 +155,12 @@ struct ContentView: View {
     }
 
     private var currentCurve: [CurvePoint] {
-        switch curveMode { case .velocity: return curves.velocity; case .expression: return curves.expression; case .pitch: return curves.pitch; case .timing: return curves.timing }
-    }
-
-    private func interpolate(_ points: [CurvePoint], x: Double) -> Double {
-        guard let first = points.first, let last = points.last else { return 0.5 }
-        if x <= first.x { return first.y }; if x >= last.x { return last.y }
-        for i in 1..<points.count where x <= points[i].x {
-            let a=points[i-1], b=points[i], t=(x-a.x)/max(0.0001,b.x-a.x); return a.y+(b.y-a.y)*t
+        switch curveMode {
+        case .velocity: return curves.velocity
+        case .expression: return curves.expression
+        case .pitch: return curves.pitch
+        case .timing: return curves.timing
         }
-        return 0.5
     }
 
     private func exportMIDI() {
@@ -236,9 +204,7 @@ struct ContentView: View {
 
     private var patternBinding: Binding<Pattern> {
         Binding(
-            get: {
-                project.tracks.first?.pattern ?? Pattern(name: "Empty", lengthBeats: 8)
-            },
+            get: { project.tracks.first?.pattern ?? Pattern(name: "Empty", lengthBeats: 8) },
             set: { newPattern in
                 mutate { p in
                     guard !p.tracks.isEmpty else { return }
@@ -250,14 +216,7 @@ struct ContentView: View {
 
     private func generate() {
         isGenerating = true
-        let request = MelodyRequest(
-            prompt: prompt,
-            bpm: project.bpm,
-            key: project.key,
-            scale: project.scale,
-            bars: 2
-        )
-
+        let request = MelodyRequest(prompt: prompt, bpm: project.bpm, key: project.key, scale: project.scale, bars: 2)
         Task {
             let candidate = try? await composer.generateMelody(request)
             if let candidate, !project.tracks.isEmpty {
@@ -282,11 +241,7 @@ struct ContentView: View {
     private func redo() { guard let p = future.popLast() else { return }; history.append(project); project = p }
 
     private func updateSelectedPitch(_ pitch: Int) {
-        guard let selectedNoteID,
-              var pattern = project.tracks.first?.pattern,
-              let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID })
-        else { return }
-
+        guard let selectedNoteID else { return }
         mutate { p in
             guard var pattern = p.tracks.first?.pattern,
                   let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID }) else { return }
@@ -297,36 +252,54 @@ struct ContentView: View {
 
     private func duplicateSelectedNote() {
         guard let selectedNoteID,
-              var pattern = project.tracks.first?.pattern,
+              let pattern = project.tracks.first?.pattern,
               let index = pattern.notes.firstIndex(where: { $0.id == selectedNoteID }) else { return }
-        var copy = pattern.notes[index]
-        copy = NoteEvent(
-            pitch: copy.pitch,
-            startBeat: min(pattern.lengthBeats - copy.durationBeats, copy.startBeat + 0.5),
-            durationBeats: copy.durationBeats,
-            velocity: copy.velocity,
-            channel: copy.channel
+        let source = pattern.notes[index]
+        let copy = NoteEvent(
+            pitch: source.pitch,
+            startBeat: min(pattern.lengthBeats - source.durationBeats, source.startBeat + 0.5),
+            durationBeats: source.durationBeats,
+            velocity: source.velocity,
+            channel: source.channel
         )
         mutate { p in
-            guard !p.tracks.isEmpty else { return }
-            p.tracks[0].pattern = pattern
-        }
-        pattern.notes.append(copy)
-        mutate { p in
-            guard !p.tracks.isEmpty else { return }
-            p.tracks[0].pattern = pattern
+            guard !p.tracks.isEmpty, var pat = p.tracks[0].pattern else { return }
+            pat.notes.append(copy)
+            p.tracks[0].pattern = pat
         }
         self.selectedNoteID = copy.id
     }
 
-    private func deleteSelectedNote() {
-        guard let selectedNoteID,
-              var pattern = project.tracks.first?.pattern
-        else { return }
-
-        pattern.notes.removeAll { $0.id == selectedNoteID }
+    private func quantizeSelectedOrAll(grid: Double = 0.25) {
         mutate { p in
-            guard !p.tracks.isEmpty else { return }
+            guard !p.tracks.isEmpty, var pat = p.tracks[0].pattern else { return }
+            for i in pat.notes.indices {
+                if let id = selectedNoteID, pat.notes[i].id != id { continue }
+                let snapped = (pat.notes[i].startBeat / grid).rounded() * grid
+                pat.notes[i].startBeat = max(0, min(pat.lengthBeats - pat.notes[i].durationBeats, snapped))
+            }
+            p.tracks[0].pattern = pat
+        }
+    }
+
+    private func transposeSelected(semitones: Int) {
+        guard let selectedNoteID else { return }
+        mutate { p in
+            guard !p.tracks.isEmpty, var pat = p.tracks[0].pattern,
+                  let index = pat.notes.firstIndex(where: { $0.id == selectedNoteID }) else { return }
+            pat.notes[index].pitch = max(24, min(108, pat.notes[index].pitch + semitones))
+            p.tracks[0].pattern = pat
+        }
+        if let note = project.tracks.first?.pattern?.notes.first(where: { $0.id == selectedNoteID }) {
+            selectedPitch = note.pitch
+        }
+    }
+
+    private func deleteSelectedNote() {
+        guard let selectedNoteID else { return }
+        mutate { p in
+            guard !p.tracks.isEmpty, var pattern = p.tracks[0].pattern else { return }
+            pattern.notes.removeAll { $0.id == selectedNoteID }
             p.tracks[0].pattern = pattern
         }
         self.selectedNoteID = nil
@@ -380,7 +353,6 @@ private struct PianoRollView: View {
     @Binding var pattern: Pattern
     @Binding var selectedPitch: Int
     @Binding var selectedNoteID: UUID?
-
     private let rowHeight: CGFloat = 22
     private let beatWidth: CGFloat = 72
     private let lowestPitch = 36
@@ -391,20 +363,10 @@ private struct PianoRollView: View {
         GeometryReader { _ in
             ScrollView([.horizontal, .vertical]) {
                 ZStack(alignment: .topLeading) {
-                    grid
-                        .contentShape(Rectangle())
-                        .gesture(
-                            SpatialTapGesture(count: 2)
-                                .onEnded { value in addNote(at: value.location) }
-                        )
-
+                    grid.contentShape(Rectangle())
+                        .gesture(SpatialTapGesture(count: 2).onEnded { value in addNote(at: value.location) })
                     ForEach(pattern.notes) { note in
-                        NoteCell(
-                            note: note,
-                            beatWidth: beatWidth,
-                            rowHeight: rowHeight,
-                            isSelected: selectedNoteID == note.id
-                        ) { delta in
+                        NoteCell(note: note, beatWidth: beatWidth, rowHeight: rowHeight, isSelected: selectedNoteID == note.id) { delta in
                             move(noteID: note.id, delta: delta)
                         }
                         .position(
@@ -417,10 +379,7 @@ private struct PianoRollView: View {
                         }
                     }
                 }
-                .frame(
-                    width: CGFloat(pattern.lengthBeats) * beatWidth,
-                    height: CGFloat(highestPitch - lowestPitch + 1) * rowHeight
-                )
+                .frame(width: CGFloat(pattern.lengthBeats) * beatWidth, height: CGFloat(highestPitch - lowestPitch + 1) * rowHeight)
                 .padding(30)
             }
         }
@@ -433,12 +392,8 @@ private struct PianoRollView: View {
                 var path = Path()
                 path.move(to: CGPoint(x: x, y: 0))
                 path.addLine(to: CGPoint(x: x, y: size.height))
-                context.stroke(
-                    path,
-                    with: .color(.secondary.opacity(beat % 4 == 0 ? 0.55 : 0.22))
-                )
+                context.stroke(path, with: .color(.secondary.opacity(beat % 4 == 0 ? 0.55 : 0.22)))
             }
-
             for row in 0...(highestPitch - lowestPitch) {
                 let y = CGFloat(row) * rowHeight
                 var path = Path()
@@ -451,11 +406,9 @@ private struct PianoRollView: View {
 
     private func move(noteID: UUID, delta: CGSize) {
         guard let index = pattern.notes.firstIndex(where: { $0.id == noteID }) else { return }
-
         var note = pattern.notes[index]
         let rawBeat = note.startBeat + delta.width / beatWidth
         let rawPitch = Double(note.pitch) - delta.height / rowHeight
-
         note.startBeat = max(0, min(pattern.lengthBeats - note.durationBeats, snapBeat(rawBeat)))
         note.pitch = max(lowestPitch, min(highestPitch, Int(rawPitch.rounded())))
         pattern.notes[index] = note
@@ -472,9 +425,7 @@ private struct PianoRollView: View {
         selectedPitch = pitch
     }
 
-    private func snapBeat(_ beat: Double) -> Double {
-        (beat / snap).rounded() * snap
-    }
+    private func snapBeat(_ beat: Double) -> Double { (beat / snap).rounded() * snap }
 }
 
 private struct NoteCell: View {
@@ -483,38 +434,22 @@ private struct NoteCell: View {
     let rowHeight: CGFloat
     let isSelected: Bool
     let move: (CGSize) -> Void
-
     @State private var dragStart: CGSize = .zero
 
     var body: some View {
         RoundedRectangle(cornerRadius: 4)
             .fill(isSelected ? Color.accentColor : Color.accentColor.opacity(0.7))
-            .frame(
-                width: max(12, note.durationBeats * beatWidth - 2),
-                height: rowHeight - 3
-            )
+            .frame(width: max(12, note.durationBeats * beatWidth - 2), height: rowHeight - 3)
             .overlay {
-                Text("\(note.pitch)")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.white)
+                Text("\(note.pitch)").font(.system(size: 9, weight: .medium)).foregroundStyle(.white)
             }
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        move(CGSize(
-                            width: value.translation.width - dragStart.width,
-                            height: value.translation.height - dragStart.height
-                        ))
+                        move(CGSize(width: value.translation.width - dragStart.width, height: value.translation.height - dragStart.height))
                         dragStart = value.translation
                     }
-                    .onEnded { _ in
-                        dragStart = .zero
-                    }
+                    .onEnded { _ in dragStart = .zero }
             )
     }
 }
-
-private enum CurveMode: String, CaseIterable, Identifiable { case velocity, expression, pitch, timing; var id: Self { self }; var title: String { rawValue.capitalized } }
-private struct CurvePoint: Identifiable { let id=UUID(); var x: Double; var y: Double }
-private struct CurveSet { var velocity:[CurvePoint]; var expression:[CurvePoint]; var pitch:[CurvePoint]; var timing:[CurvePoint]; static let standard=CurveSet(velocity:[CurvePoint(x:0,y:0.7),CurvePoint(x:0.5,y:0.45),CurvePoint(x:1,y:0.8)],expression:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)],pitch:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)],timing:[CurvePoint(x:0,y:0.5),CurvePoint(x:1,y:0.5)]) }
-private struct CurveEditorView: View { @Binding var points:[CurvePoint]; var body: some View { GeometryReader { g in ZStack { RoundedRectangle(cornerRadius:8).fill(.quaternary.opacity(0.3)); Path { p in guard let f=points.first else{return}; p.move(to:CGPoint(x:f.x*g.size.width,y:(1-f.y)*g.size.height)); for q in points.dropFirst(){p.addLine(to:CGPoint(x:q.x*g.size.width,y:(1-q.y)*g.size.height))} }.stroke(.accent,lineWidth:2); ForEach(points){q in Circle().fill(.accent).frame(width:10,height:10).position(x:q.x*g.size.width,y:(1-q.y)*g.size.height).gesture(DragGesture().onChanged{v in if let i=points.firstIndex(where:{$0.id==q.id}){points[i].x=max(0,min(1,v.location.x/g.size.width));points[i].y=max(0,min(1,1-v.location.y/g.size.height));points.sort{$0.x<$1.x}}}) } } } } }
