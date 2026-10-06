@@ -1,33 +1,23 @@
 # Development status
 
-Updated: 2026-10-06 (evening)
+Updated: 2026-10-06 late
 
-## Implemented
+## macOS UI (current)
 
-- Cross-platform MusicProject core, .yms, notes/tags model.
-- Undo/redo, revision graph (core), automation lanes.
-- Demo AI generate + transform.
-- Android prototype.
-
-### macOS UI
-
-- Piano Roll: create/drag, quantize, humanize, transpose, duplicate.
-- Workspace modes Compose / Edit / AI.
-- **Cmd+K command palette** (`CommandPalette.swift`).
-- **AI candidate stage**: Generate/Transform → Accept/Reject (does not overwrite until Accept).
-- **Project notes & tags** UI in inspector (uses `ProjectMetadataEditing`).
-- Curve lab restored.
+- Piano roll via `PianoRollCanvas.swift`
+- **Multi-select**: Cmd-click notes; Select All in Cmd+K
+- **AI candidate ghost overlay** (orange, toggleable) before Accept/Reject
+- Quantize / humanize / transpose / delete operate on selection set
+- Workspace modes, command palette, notes/tags, curves
 
 ## Not done
 
-- Audio engine / real transport.
-- Multi-select box on Piano Roll.
-- Arrangement timeline / browser panel.
-- Full candidate A/B visual compare on roll.
+- Box-drag selection rectangle
+- Audio engine / playhead
+- Arrangement timeline strip
 
 ## Next
 
-1. Multi-note selection.
-2. Playhead + MIDI preview path.
-3. Arrangement strip.
-4. Candidate overlay on Piano Roll.
+1. Box selection
+2. MIDI preview path
+3. Arrangement overview strip
