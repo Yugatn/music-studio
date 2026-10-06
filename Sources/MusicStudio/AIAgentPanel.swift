@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Inspector section for connecting agents and the rework-after-subject loop.
 struct AIAgentPanel: View {
     @ObservedObject var orchestrator: AIAgentOrchestrator
     let project: MusicProject
@@ -13,9 +12,16 @@ struct AIAgentPanel: View {
     var onAccept: () -> Void
     var onReject: () -> Void
 
+    @State private var showConnection = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("AI AGENT").font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text("AI AGENT").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Connect AI…") { showConnection = true }
+                    .font(.caption)
+            }
 
             Picker("Agent", selection: activeAgentBinding) {
                 ForEach(orchestrator.availableAgents) { agent in
@@ -30,28 +36,31 @@ struct AIAgentPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if orchestrator.connectionConfig.isReady {
+                Text("Remote: on · \(orchestrator.connectionConfig.model)")
+                    .font(.caption2)
+                    .foregroundStyle(.green)
+            } else {
+                Text("Remote: off (local agents only)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Button("Generate") { onGenerate() }
                     .disabled(isBusy)
-                    .help("Independent generation from prompt")
                 Button("Rework after edits") { onRework() }
                     .disabled(isBusy || (currentPattern?.notes.isEmpty ?? true))
-                    .help("Agent reworks the current subject-edited melody")
             }
             Button("Continue independently") { onContinue() }
                 .disabled(isBusy)
-                .help("Agent continues from last subject edit or last accepted candidate")
 
             if orchestrator.session.pendingCandidate != nil {
                 Divider()
                 Text("CANDIDATE").font(.caption2).foregroundStyle(.secondary)
                 if let explanation = orchestrator.session.pendingExplanation {
-                    Text(explanation)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    Text(explanation).font(.caption2).foregroundStyle(.secondary)
                 }
-                Text("\(orchestrator.session.pendingCandidate?.notes.count ?? 0) notes staged")
-                    .font(.caption2)
                 HStack {
                     Button("Accept") { onAccept() }
                     Button("Reject", role: .destructive) { onReject() }
@@ -65,17 +74,16 @@ struct AIAgentPanel: View {
             if !orchestrator.session.turns.isEmpty {
                 Divider()
                 Text("SESSION").font(.caption2).foregroundStyle(.secondary)
-                ForEach(orchestrator.session.turns.suffix(6).reversed()) { turn in
+                ForEach(orchestrator.session.turns.suffix(5).reversed()) { turn in
                     Text(turnLabel(turn))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
-
-            Text("After you edit notes, use Rework — the agent must start from your version.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        }
+        .sheet(isPresented: $showConnection) {
+            AIConnectionSettingsView(orchestrator: orchestrator)
         }
     }
 
