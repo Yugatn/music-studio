@@ -51,7 +51,7 @@ public struct LocalCompositionAdvisor: CompositionAdvisor {
         }
 
         var result: [CompositionRecommendation] = []
-        let velocities = notes.map(.velocity)
+        let velocities = notes.map(\.velocity)
         let averageVelocity = Double(velocities.reduce(0,+)) / Double(velocities.count)
         if intent.energy > 0.7 && averageVelocity < 85 {
             result.append(CompositionRecommendation(title: "Усилить динамику", reason: "Заявлена высокая энергия, но средняя velocity ниже ожидаемой.", changes: ["Поднять velocity ключевых нот", "Добавить контраст между сильными и слабыми долями"], confidence: 0.82))
