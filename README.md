@@ -15,6 +15,7 @@ AI-first music workstation with a native macOS editor and a cross-platform music
 - Composition revision graph for iterative AI work.
 - Musical metrics and AI composition recommendations.
 - Explicit AI change plans.
+- Structured composition intent and reusable sound palettes for cinematic, shamanic and dark ambient directions.
 - Android Compose prototype.
 - Cross-platform project storage and sync model.
 
@@ -34,9 +35,9 @@ The project model is designed so the current edited composition remains the sour
 
 ## Repository map
 
-- `Sources/MusicStudioCore` — platform-independent musical model and AI/composition services.
+- `Sources/MusicStudioCore` — platform-independent musical model and AI/composition services, including `CompositionPresets`.
 - `Sources/MusicStudio` — current macOS SwiftUI application.
 - `android` — Android client prototype.
-- `docs` — architecture, AI workflow, roadmap and development status.
+- `docs` — architecture, AI workflow, sound palette library, roadmap and development status.
 
-See `docs/ARCHITECTURE.md`, `docs/AI_COMPOSITION_WORKFLOW.md`, `docs/DEVELOPMENT_STATUS.md` and `docs/ROADMAP.md`.
+See `docs/ARCHITECTURE.md`, `docs/AI_COMPOSITION_WORKFLOW.md`, `docs/SOUND_PALETTE_LIBRARY.md`, `docs/DEVELOPMENT_STATUS.md` and `docs/ROADMAP.md`.
