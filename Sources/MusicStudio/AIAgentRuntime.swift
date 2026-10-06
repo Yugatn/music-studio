@@ -3,7 +3,6 @@ import MusicStudioCore
 
 // MARK: - Demo agents (local, no network)
 
-/// Default melodic agent: generate from prompt or continue from edited notes.
 struct LocalMelodyAgent: AIMusicAgent {
     let descriptor = AIAgentDescriptor(
         id: "local.melody",
@@ -49,13 +48,12 @@ struct LocalMelodyAgent: AIMusicAgent {
                 pattern: revised,
                 mode: context.mode,
                 sourceRevision: context.request.sourceRevision,
-                explanation: "Reworked after subject edits: kept structure, applied ‘\(instruction)’ (local)."
+                explanation: "Reworked after subject edits (local)."
             )
         }
     }
 }
 
-/// Variation-focused agent: stronger changes, still based on subject material.
 struct LocalVariationAgent: AIMusicAgent {
     let descriptor = AIAgentDescriptor(
         id: "local.variation",
@@ -83,7 +81,7 @@ struct LocalVariationAgent: AIMusicAgent {
                 pattern: revised,
                 mode: .regenerateVariation,
                 sourceRevision: context.request.sourceRevision,
-                explanation: "Variation agent: denser/expressive rework of subject melody."
+                explanation: "Variation agent: rework of subject melody."
             )
         }
         let pattern = try await engine.generateMelody(request)
@@ -91,7 +89,7 @@ struct LocalVariationAgent: AIMusicAgent {
             pattern: pattern,
             mode: .generate,
             sourceRevision: nil,
-            explanation: "Variation agent: no source; generated new material."
+            explanation: "Variation agent: generated new material."
         )
     }
 }
@@ -103,14 +101,16 @@ final class AIAgentOrchestrator: ObservableObject {
     @Published private(set) var session: AIAgentSession
     @Published private(set) var availableAgents: [AIAgentDescriptor] = []
     @Published var lastError: String?
+    @Published var connectionConfig: AIConnectionConfig
 
     private let registry = AIAgentRegistry()
 
     init() {
+        connectionConfig = AIConnectionConfig.load()
         let melody = LocalMelodyAgent()
-        let variation = LocalVariationAgent()
         registry.register(melody)
-        registry.register(variation)
+        registry.register(LocalVariationAgent())
+        refreshRemoteAgent()
         session = AIAgentSession(activeAgentID: melody.descriptor.id)
         availableAgents = registry.allDescriptors
     }
@@ -120,12 +120,28 @@ final class AIAgentOrchestrator: ObservableObject {
         session.activeAgentID = id
     }
 
-    /// Call after the subject mutates notes (manual piano-roll edit).
+    /// Persist connection settings and (re)register the remote agent.
+    func applyConnection(_ config: AIConnectionConfig) {
+        connectionConfig = config
+        config.save()
+        refreshRemoteAgent()
+        availableAgents = registry.allDescriptors
+        if config.isReady {
+            session.activeAgentID = "remote.http"
+        }
+    }
+
+    private func refreshRemoteAgent() {
+        registry.unregister(id: "remote.http")
+        if connectionConfig.isReady {
+            registry.register(RemoteHTTPAgent(config: connectionConfig))
+        }
+    }
+
     func noteSubjectEdit(pattern: Pattern, projectID: UUID?) {
         session.recordSubjectEdit(SubjectEditSnapshot(pattern: pattern, projectID: projectID))
     }
 
-    /// Independent generation (no required subject source).
     func generateIndependent(
         project: MusicProject,
         prompt: String,
@@ -142,7 +158,6 @@ final class AIAgentOrchestrator: ObservableObject {
         )
     }
 
-    /// Rework using the current pattern after subject edits — core collaborative loop.
     func reworkAfterSubject(
         project: MusicProject,
         currentPattern: Pattern,
@@ -160,7 +175,6 @@ final class AIAgentOrchestrator: ObservableObject {
         )
     }
 
-    /// Agent continues independently from last accepted or last subject snapshot.
     func continueIndependent(project: MusicProject, prompt: String) async -> AICompositionResult? {
         let source = session.preferredSourcePattern ?? project.tracks.first?.pattern
         return await run(
@@ -174,13 +188,8 @@ final class AIAgentOrchestrator: ObservableObject {
         )
     }
 
-    func acceptPending() -> Pattern? {
-        session.acceptPending()
-    }
-
-    func rejectPending() {
-        session.rejectPending()
-    }
+    func acceptPending() -> Pattern? { session.acceptPending() }
+    func rejectPending() { session.rejectPending() }
 
     private func run(
         mode: AICompositionMode,
