@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import MusicStudioCore
 
 enum WorkspaceMode: String, CaseIterable, Identifiable {
     case compose, edit, ai
@@ -574,9 +575,9 @@ private struct CurveEditorView: View {
                     for q in points.dropFirst() {
                         p.addLine(to: CGPoint(x: q.x * g.size.width, y: (1 - q.y) * g.size.height))
                     }
-                }.stroke(.accentColor, lineWidth: 2)
+                }.stroke(Color.accentColor, lineWidth: 2)
                 ForEach(points) { q in
-                    Circle().fill(.accentColor).frame(width: 10, height: 10)
+                    Circle().fill(Color.accentColor).frame(width: 10, height: 10)
                         .position(x: q.x * g.size.width, y: (1 - q.y) * g.size.height)
                         .gesture(DragGesture().onChanged { v in
                             if let i = points.firstIndex(where: { $0.id == q.id }) {
