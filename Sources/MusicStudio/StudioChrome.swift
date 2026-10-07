@@ -1,4 +1,5 @@
 import SwiftUI
+import MusicStudioCore
 
 /// Compact top chrome: transport, project identity, status.
 struct StudioChrome: View {
@@ -23,7 +24,6 @@ struct StudioChrome: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                // Transport cluster
                 HStack(spacing: 6) {
                     Button {
                         isPlaying.toggle()
@@ -178,15 +178,12 @@ struct ArrangementStrip: View {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.secondary.opacity(0.08))
 
-                    // Pattern density bar
                     densityBars(width: geo.size.width, height: geo.size.height, notes: pattern.notes, color: .accentColor.opacity(0.55))
 
-                    // Candidate ghost density
                     if let candidate {
                         densityBars(width: geo.size.width, height: geo.size.height, notes: candidate.notes, color: .orange.opacity(0.35))
                     }
 
-                    // Bar grid
                     ForEach(0...Int(lengthBeats / 4), id: \.self) { bar in
                         let x = CGFloat(Double(bar) * 4 / lengthBeats) * geo.size.width
                         Path { p in
@@ -220,32 +217,62 @@ struct ArrangementStrip: View {
     }
 }
 
-/// Collapsible left browser placeholder — ready for assets without cluttering compose mode.
+/// Left browser: templates, sound presets, demo — project stays the center of the DAW.
 struct StudioBrowserPanel: View {
+    var onNewFromTemplate: (ProjectTemplate) -> Void = { _ in }
+    var onLoadDemo: () -> Void = {}
+    var onSelectPreset: (CompositionPreset) -> Void = { _ in }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("BROWSER").font(.caption).foregroundStyle(.secondary)
-            Group {
-                labelRow("Projects", systemImage: "folder")
-                labelRow("MIDI", systemImage: "pianokeys")
-                labelRow("Palettes", systemImage: "paintpalette")
-                labelRow("AI Candidates", systemImage: "sparkles")
-                labelRow("Recent", systemImage: "clock")
-            }
-            Spacer()
-            Text("Drag-and-drop landing zone later.")
-                .font(.caption2)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("BROWSER")
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+            List {
+                Section("Project") {
+                    Button {
+                        onLoadDemo()
+                    } label: {
+                        Label("Demo composition", systemImage: "music.note.list")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Load the built-in demo with editable notes")
+
+                    ForEach(BuiltInProjectTemplates.all) { template in
+                        Button {
+                            onNewFromTemplate(template)
+                        } label: {
+                            Label(template.name, systemImage: "doc.badge.plus")
+                        }
+                        .buttonStyle(.plain)
+                        .help("\(Int(template.bpm)) BPM · \(template.key) \(template.scale)")
+                    }
+                }
+
+                Section("Sound palettes") {
+                    ForEach(CompositionPresets.all) { preset in
+                        Button {
+                            onSelectPreset(preset)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(preset.title).font(.callout)
+                                Text(preset.summary)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .listStyle(.sidebar)
         }
-        .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.secondary.opacity(0.05))
-    }
-
-    private func labelRow(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.callout)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 4)
     }
 }
