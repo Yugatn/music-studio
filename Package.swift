@@ -23,7 +23,7 @@ let package = Package(
         ),
         .testTarget(
             name: "MusicStudioTests",
-            dependencies: ["MusicStudioCore"],
+            dependencies: ["MusicStudioCore", "MusicStudio"],
             path: "Tests/MusicStudioTests"
         )
     ]
