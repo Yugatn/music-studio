@@ -1,4 +1,5 @@
 import SwiftUI
+import MusicStudioCore
 
 struct AIAgentPanel: View {
     @ObservedObject var orchestrator: AIAgentOrchestrator
