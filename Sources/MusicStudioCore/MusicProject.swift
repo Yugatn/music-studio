@@ -51,11 +51,30 @@ public struct MusicProject: Codable, Identifiable, Equatable, Sendable {
         self.id=id; self.name=name; self.bpm=bpm; self.key=key; self.scale=scale; self.tracks=tracks; self.metadata=metadata
     }
 
+    /// Starter project with a short C-major phrase (7 notes) for editing and tests.
     public static let demo = MusicProject(
         name: "Untitled",
         bpm: 120,
         key: "C",
         scale: "Major",
-        tracks: [Track(name: "AI Melody", kind: .instrument, pattern: Pattern(name: "Melody", lengthBeats: 8))]
+        tracks: [
+            Track(
+                name: "AI Melody",
+                kind: .instrument,
+                pattern: Pattern(
+                    name: "Melody",
+                    lengthBeats: 8,
+                    notes: [
+                        NoteEvent(pitch: 60, startBeat: 0.0, durationBeats: 0.5),
+                        NoteEvent(pitch: 62, startBeat: 0.5, durationBeats: 0.5),
+                        NoteEvent(pitch: 64, startBeat: 1.0, durationBeats: 0.5),
+                        NoteEvent(pitch: 65, startBeat: 1.5, durationBeats: 0.5),
+                        NoteEvent(pitch: 67, startBeat: 2.0, durationBeats: 0.5),
+                        NoteEvent(pitch: 69, startBeat: 2.5, durationBeats: 0.5),
+                        NoteEvent(pitch: 71, startBeat: 3.0, durationBeats: 0.5)
+                    ]
+                )
+            )
+        ]
     )
 }
