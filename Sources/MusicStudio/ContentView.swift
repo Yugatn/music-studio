@@ -45,7 +45,6 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                StudioShortcutBridge()
                 Color.clear.frame(height: 0)
                     .onReceive(NotificationCenter.default.publisher(for: .openMIDIFile)) { _ in openMIDI() }
                     .onReceive(NotificationCenter.default.publisher(for: .openProjectFile)) { _ in openProject() }
@@ -129,9 +128,11 @@ struct ContentView: View {
 
                     if showInspector {
                         Divider()
-                        inspector
-                            .padding(16)
-                            .frame(width: workspaceMode == .edit ? 280 : 260)
+                        ScrollView {
+                            inspector
+                                .padding(16)
+                        }
+                        .frame(width: workspaceMode == .edit ? 280 : 260)
                     }
                 }
             }
