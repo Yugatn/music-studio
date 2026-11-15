@@ -45,7 +45,26 @@ struct AIConnectionConfig: Codable, Equatable, Sendable {
         try? data.write(to: Self.fileURL, options: .atomic)
     }
 
+    /// Reject insecure remote endpoints when a credential is configured.
+    /// Plain HTTP is only permitted for uncredentialed local loopback agents.
     var isReady: Bool {
-        enabled && !baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard enabled,
+              let components = URLComponents(
+                string: baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+              ),
+              let scheme = components.scheme?.lowercased(),
+              let host = components.host?.lowercased(),
+              !host.isEmpty,
+              components.user == nil,
+              components.password == nil,
+              components.query == nil,
+              components.fragment == nil
+        else { return false }
+
+        if scheme == "https" { return true }
+        if scheme == "http", apiKey.isEmpty {
+            return ["localhost", "127.0.0.1", "::1"].contains(host)
+        }
+        return false
     }
 }
