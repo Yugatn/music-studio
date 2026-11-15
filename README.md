@@ -47,6 +47,8 @@ swift run MusicStudio
 4. **Save & connect** — agent **Remote AI** appears in the picker.  
 5. **Generate** / **Rework after edits** use the remote model when possible; on failure the local engine is used.
 
+**Connection safety:** remote AI endpoints must use HTTPS. Uncredentialed HTTP is allowed only for loopback agents (`localhost`, `127.0.0.1`, or `::1`). The settings file currently retains API keys in local JSON, **not in macOS Keychain**, so machine-level file protection matters. Do not share this file, and prefer a separate minimal-permission service token. Keychain migration remains a future improvement.
+
 Keys are stored only under Application Support (`~/Library/Application Support/MusicStudio/ai-connection.json`), not in project files.
 
 Compatible with **OpenAI Chat Completions** and similar APIs that return JSON notes. Remote responses are validated and normalized before they become candidates; malformed or oversized responses are rejected and the local composer is used as a fallback.
